@@ -5,6 +5,7 @@ const CanvasComponent: React.FC = () => {
     const [canvas, setCanvas] = useState<fabric.Canvas | null>(null);
     const [rectangles, setRectangles] = useState<fabric.Object[]>([]);
     const [dragOver, setDragOver] = React.useState(false);
+    const [originalPosition, setOriginalPosition] = useState<{ left: number; top: number } | null>(null);
 
     const handleDragOverStart = () => setDragOver(true);
     const handleDragOverEnd = () => setDragOver(false);
@@ -21,40 +22,66 @@ const CanvasComponent: React.FC = () => {
         event.preventDefault();
         const id = event.dataTransfer.getData('text');
 
-        if (id === 'd1') {
+        if (id === 'd1' || id === 'd2') {
             const dropX = event.clientX - event.currentTarget.getBoundingClientRect().left;
             const dropY = event.clientY - event.currentTarget.getBoundingClientRect().top;
 
             if (canvas) {
-                const rect = new fabric.Rect({
-                    left: dropX,
-                    top: dropY,
+                let newObject: any;
+                if (id === 'd1') {
+                    newObject = new fabric.Rect({
+                        left: dropX,
+                        top: dropY,
+                        fill: 'red',
+                        width: 100,
+                        height: 50,
+                        selectable: true,
+                    });
+                } else {
+                    newObject = new fabric.Textbox('New Textbox', {
+                        left: dropX,
+                        top: dropY,
+                        fill: 'darkblue',
+                        width: 100,
+                        height: 100,
+                        selectable: true,
+                        hasControls: true,
+                        textAlign: 'center',
+                        fontSize: 16
+                    });
+                }
+
+                const cancelButton = new fabric.Text('\u2716', {
+                    left: dropX + 110,
+                    top: dropY - 15,
+                    fontSize: 16,
                     fill: 'red',
-                    width: 100,
-                    height: 50,
                     selectable: true,
+                    hoverCursor: 'pointer'
                 });
-                canvas.add(rect);
-                setRectangles(prevRectangles => [...prevRectangles, rect]);
-            }
-        } else if (id === 'd2') {
-            const dropX = event.clientX - event.currentTarget.getBoundingClientRect().left;
-            const dropY = event.clientY - event.currentTarget.getBoundingClientRect().top;
 
-            if (canvas) {
-                const textBox = new fabric.Textbox('New Textbox', {
-                    left: dropX,
-                    top: dropY,
-                    fill: 'darkblue',
-                    width: 300,
-                    height: 100,
-                    selectable: true,
-                    hasControls: true,
-                    textAlign: 'center',
-                    fontSize: 16
+                cancelButton.on('mousedown', () => {
+                    if (canvas && newObject) {
+                        canvas.remove(newObject, cancelButton);
+                        setRectangles(prevRectangles => prevRectangles.filter(item => item !== newObject));
+                    }
                 });
-                canvas.add(textBox);
-                setRectangles(prevRectangles => [...prevRectangles, textBox]);
+
+                newObject.on('moving', () => {
+                    cancelButton.set({
+                        left: newObject.left + 110,
+                        top: newObject.top - 15
+                    });
+                    setOriginalPosition((prev: any) => ({
+                        ...prev,
+                        left: newObject.left,
+                        top: newObject.top
+                    }));
+                    canvas.renderAll();
+                });
+
+                canvas.add(newObject, cancelButton);
+                setRectangles(prevRectangles => [...prevRectangles, newObject]);
             }
         }
         setDragOver(false);
@@ -66,10 +93,12 @@ const CanvasComponent: React.FC = () => {
             height: 1000
         });
         setCanvas(newCanvas);
+        
         return () => {
             newCanvas.dispose();
         };
     }, []);
+    console.log(originalPosition);
 
     const saveButton = () => {
         console.log(rectangles);
@@ -85,7 +114,6 @@ const CanvasComponent: React.FC = () => {
             </div>
             <div style={{ position: 'relative' }}>
                 <button onClick={saveButton}>Save</button>
-
             </div>
             <div
                 onDragOver={enableDropping}
