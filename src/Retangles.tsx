@@ -26,6 +26,20 @@ const CanvasComponent: React.FC = () => {
             const dropX = event.clientX - event.currentTarget.getBoundingClientRect().left;
             const dropY = event.clientY - event.currentTarget.getBoundingClientRect().top;
 
+            const cancelControls = (obj: fabric.Group | fabric.IText) => {
+                obj.setControlsVisibility({
+                    mt: false, // 上中
+                    mb: false, // 下中
+                    ml: false, // 左中
+                    mr: false, // 右中
+                    bl: false, // 左下
+                    br: true, // 右下
+                    tl: false, // 左上
+                    tr: false, // 右上
+                    mtr: false, // 角度旋轉控制點
+                })
+            }
+
             if (canvas) {
                 let newObject: any;
                 if (id === 'd1') {
@@ -35,7 +49,9 @@ const CanvasComponent: React.FC = () => {
                         fill: 'red',
                         width: 100,
                         height: 50,
+                        cornerSize: 12,
                         selectable: true,
+                        transparentCorners: false,
                     });
                 } else {
                     newObject = new fabric.Textbox('New Textbox', {
@@ -50,28 +66,23 @@ const CanvasComponent: React.FC = () => {
                         fontSize: 16
                     });
                 }
+                cancelControls(newObject);
 
-                const cancelButton = new fabric.Text('\u2716', {
-                    left: dropX + 110,
-                    top: dropY - 15,
-                    fontSize: 16,
-                    fill: 'red',
-                    selectable: true,
-                    hoverCursor: 'pointer'
-                });
 
-                cancelButton.on('mousedown', () => {
-                    if (canvas && newObject) {
-                        canvas.remove(newObject, cancelButton);
-                        setRectangles(prevRectangles => prevRectangles.filter(item => item !== newObject));
-                    }
-                });
+                // cancelButton.on('mousedown', () => {
+                //     if (canvas && newObject) {
+                //         canvas.remove(newObject, cancelButton);
+                //         setRectangles(prevRectangles => prevRectangles.filter(item => item !== newObject));
+                //     }
+                // });
 
                 newObject.on('moving', () => {
-                    cancelButton.set({
-                        left: newObject.left + 110,
-                        top: newObject.top - 15
-                    });
+                    // cancelButton.set({
+                    //     left: newObject.left! - 25,
+                    //     top: newObject.top! - 20
+                    // });
+                    // console.log(cancelButton);
+
                     setOriginalPosition((prev: any) => ({
                         ...prev,
                         left: newObject.left,
@@ -80,7 +91,7 @@ const CanvasComponent: React.FC = () => {
                     canvas.renderAll();
                 });
 
-                canvas.add(newObject, cancelButton);
+                canvas.add(newObject);
                 setRectangles(prevRectangles => [...prevRectangles, newObject]);
             }
         }
@@ -93,12 +104,12 @@ const CanvasComponent: React.FC = () => {
             height: 1000
         });
         setCanvas(newCanvas);
-        
+
         return () => {
             newCanvas.dispose();
         };
     }, []);
-    console.log(originalPosition);
+    // console.log(originalPosition);
 
     const saveButton = () => {
         console.log(rectangles);
