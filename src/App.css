@@ -48,3 +48,6 @@
 img {
   width: 100px;
 }
+.canvas {
+  position: relative;
+}

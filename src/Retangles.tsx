@@ -1,5 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { fabric } from 'fabric';
+import './App.css'
+
+import './utils/customizeFabric';
+import PdfViewer from './components/react-pdf';
 
 const CanvasComponent: React.FC = () => {
     const [canvas, setCanvas] = useState<fabric.Canvas | null>(null);
@@ -26,20 +30,6 @@ const CanvasComponent: React.FC = () => {
             const dropX = event.clientX - event.currentTarget.getBoundingClientRect().left;
             const dropY = event.clientY - event.currentTarget.getBoundingClientRect().top;
 
-            const cancelControls = (obj: fabric.Group | fabric.IText) => {
-                obj.setControlsVisibility({
-                    mt: false, // 上中
-                    mb: false, // 下中
-                    ml: false, // 左中
-                    mr: false, // 右中
-                    bl: false, // 左下
-                    br: true, // 右下
-                    tl: false, // 左上
-                    tr: false, // 右上
-                    mtr: false, // 角度旋轉控制點
-                })
-            }
-
             if (canvas) {
                 let newObject: any;
                 if (id === 'd1') {
@@ -49,7 +39,7 @@ const CanvasComponent: React.FC = () => {
                         fill: 'red',
                         width: 100,
                         height: 50,
-                        cornerSize: 12,
+                        cornerSize: 10,
                         selectable: true,
                         transparentCorners: false,
                     });
@@ -63,26 +53,12 @@ const CanvasComponent: React.FC = () => {
                         selectable: true,
                         hasControls: true,
                         textAlign: 'center',
-                        fontSize: 16
+                        fontSize: 16,
+                        cornerSize: 10,
                     });
                 }
-                cancelControls(newObject);
-
-
-                // cancelButton.on('mousedown', () => {
-                //     if (canvas && newObject) {
-                //         canvas.remove(newObject, cancelButton);
-                //         setRectangles(prevRectangles => prevRectangles.filter(item => item !== newObject));
-                //     }
-                // });
 
                 newObject.on('moving', () => {
-                    // cancelButton.set({
-                    //     left: newObject.left! - 25,
-                    //     top: newObject.top! - 20
-                    // });
-                    // console.log(cancelButton);
-
                     setOriginalPosition((prev: any) => ({
                         ...prev,
                         left: newObject.left,
@@ -101,19 +77,63 @@ const CanvasComponent: React.FC = () => {
     useEffect(() => {
         const newCanvas = new fabric.Canvas('my-canvas', {
             width: 1000,
-            height: 1000
+            height: 500
         });
         setCanvas(newCanvas);
+
+        const savedDraft = localStorage.getItem('canvasDraft');
+        if (savedDraft && canvas) {
+            canvas.loadFromJSON(savedDraft, () => {
+                canvas.renderAll();
+            });
+        }
 
         return () => {
             newCanvas.dispose();
         };
     }, []);
-    // console.log(originalPosition);
+
 
     const saveButton = () => {
         console.log(rectangles);
     }
+
+    // work
+    const saveDraft = () => {
+        if (canvas) {
+            const json = JSON.stringify(canvas.toJSON());
+            localStorage.setItem('canvasDraft', json);
+            console.log('Draft saved.');
+        }
+    };
+
+    const loadDraft = () => {
+        const savedDraft = localStorage.getItem('canvasDraft');
+        if (savedDraft && canvas) {
+            canvas.loadFromJSON(savedDraft, () => {
+                canvas.renderAll();
+                console.log('Draft loaded.');
+            });
+        } else {
+            console.log('No draft found.');
+        }
+    };
+
+    const handleUploadFile = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file: File | undefined = event.target.files?.[0];
+        if (!file) {
+            return;
+        } else {
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                const fileContent = event.target?.result as string;
+                localStorage.setItem('file', fileContent);
+            };
+            reader.readAsDataURL(file);
+        }
+    }
+
+
 
     return (
         <div>
@@ -125,15 +145,19 @@ const CanvasComponent: React.FC = () => {
             </div>
             <div style={{ position: 'relative' }}>
                 <button onClick={saveButton}>Save</button>
+                <button onClick={saveDraft}>save draft</button>
+                <button onClick={loadDraft}>Load Draft</button>
             </div>
             <div
+                className='canvas'
                 onDragOver={enableDropping}
                 onDrop={handleDrop}
                 onDragEnter={handleDragOverStart}
                 onDragLeave={handleDragOverEnd}
                 style={dragOver ? { fontWeight: 'bold', background: 'green', color: 'white' } : {}}
-            >
-                <canvas id='my-canvas'></canvas>
+            >                                                                                                                    
+                <canvas id='my-canvas' style={{ position: 'absolute', top: 0, left: 0, zIndex: 999 }}></canvas>
+                <PdfViewer />
             </div>
         </div>
     );

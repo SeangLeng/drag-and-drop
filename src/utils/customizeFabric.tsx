@@ -1,6 +1,6 @@
 import { fabric } from 'fabric'
 
-const deleteIcon = new Image(); 
+const deleteIcon = new Image();
 // set deleteIcon
 deleteIcon.src = `https://upload.wikimedia.org/wikipedia/commons/thumb/5/53/OOjs_UI_icon_cancel-destructive.svg/1200px-OOjs_UI_icon_cancel-destructive.svg.png`
 
